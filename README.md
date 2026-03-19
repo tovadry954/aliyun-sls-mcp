@@ -17,12 +17,72 @@
 **aliyun-sls-mcp** 让你可以在 Cursor 或 Claude Desktop 的对话框里，直接用自然语言查询 SLS 日志：
 
 > "查一下 my-project 项目最近 15 分钟的错误日志"
-> 
+>
 > "统计一下最近一小时各接口的报错次数"
-> 
+>
 > "帮我排查今天上午 11 点左右 支付服务的 timeout 问题"
 
 AI 会自动调用 SLS API 查出日志，帮你分析问题。
+
+---
+
+## 支持哪些日志来源？
+
+**只要你的服务日志写入了阿里云 SLS，就可以用本工具查询。** 以下是常见场景：
+
+### 函数计算 FC（Function Compute）
+
+阿里云函数计算默认将函数执行日志（包括 `console.log` 输出、错误堆栈、冷启动信息等）持久化到 SLS。
+
+在 FC 控制台 → 函数详情 → 日志，可以看到对应的 SLS Project 和 Logstore，将它们填入对话即可：
+
+```
+查询 fc-log-project aliyun-fc-cn-shenzhen-xxx-log logstore 最近 30 分钟内 my-function 函数的错误日志
+```
+
+> 注意：FC 日志不包含 `__pack_meta__` 字段，无法使用 `get_context_logs`，可改用 `query_logs` 按请求 ID 或 `__tag__:__pack_id__` 追踪同一次调用的完整日志。
+
+### SAE（Serverless 应用引擎）
+
+SAE 支持将应用的标准输出（stdout/stderr）投递到 SLS。开启后可查询所有实例的日志，无需逐台登录。
+
+在 SAE 控制台 → 应用详情 → 日志管理 → 日志采集，配置投递到 SLS 后，即可通过本工具查询：
+
+```
+查询 sae-log-project sae-app-stdout-store 中 my-app 最近 1 小时的日志
+```
+
+### ECS / 自建服务
+
+通过阿里云 Logtail 采集器，可以将 ECS 上任意文件日志（如 Nginx 日志、应用日志）采集到 SLS。配置完成后即可查询：
+
+```
+查询 my-nginx-project nginx-access-log 中最近 1 小时状态码为 5xx 的请求
+```
+
+### 容器服务 ACK（Kubernetes）
+
+ACK 集群可配置将 Pod 日志（容器标准输出）采集到 SLS，支持按 namespace、Pod 名称等字段过滤：
+
+```
+查询 k8s-log-project k8s-stdout 中 namespace 为 production，pod 包含 payment 的最近 15 分钟错误日志
+```
+
+### API 网关 / SLB / CDN 访问日志
+
+阿里云 API 网关、SLB 负载均衡、CDN 等产品支持将访问日志自动投递到 SLS，可用于分析流量、排查 4xx/5xx 错误：
+
+```
+统计 apigw-log-project access-log 最近 1 小时各 API 路径的请求量和平均延迟
+```
+
+### RDS / 数据库慢查询日志
+
+RDS 审计日志和慢查询日志也可投递到 SLS，配合 SQL 分析功能可快速定位慢查询：
+
+```
+查询 rds-log-project rds-slowquery-log 最近 1 天执行时间超过 1 秒的慢 SQL，按执行次数排序
+```
 
 ---
 
