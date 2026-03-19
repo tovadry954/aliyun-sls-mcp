@@ -1,31 +1,76 @@
 import { z } from 'zod';
-import { listProjects } from '../sls-client.js';
+import { listProjects, getConfiguredRegions } from '../sls-client.js';
 
 export const listProjectsSchema = z.object({
-  region: z
-    .string()
+  regions: z
+    .union([z.string(), z.array(z.string())])
     .optional()
     .describe(
-      'Alibaba Cloud region ID, e.g. cn-hangzhou, cn-shanghai, cn-shenzhen, cn-beijing, ap-southeast-1. Defaults to SLS_REGION env variable.'
+      'One or more Alibaba Cloud region IDs to query. Accepts a single string (e.g. "cn-hangzhou") or an array (e.g. ["cn-hangzhou","cn-shenzhen"]). Defaults to all regions configured in SLS_REGIONS / SLS_REGION env variables.'
     ),
 });
 
 export type ListProjectsInput = z.infer<typeof listProjectsSchema>;
 
 export async function handleListProjects(input: ListProjectsInput): Promise<string> {
-  const projects = await listProjects(input.region);
-
-  if (projects.length === 0) {
-    return `No SLS projects found in region: ${input.region || 'default'}`;
+  // Resolve target regions
+  let targetRegions: string[];
+  if (!input.regions || (Array.isArray(input.regions) && input.regions.length === 0)) {
+    targetRegions = getConfiguredRegions();
+  } else if (typeof input.regions === 'string') {
+    targetRegions = [input.regions];
+  } else {
+    targetRegions = input.regions;
   }
 
-  const lines = projects.map(
-    (p) => `- **${p.projectName}** (${p.region})${p.description ? `\n  ${p.description}` : ''}`
+  // Query all regions in parallel
+  const results = await Promise.allSettled(
+    targetRegions.map((region) => listProjects(region))
   );
 
-  return [
-    `Found **${projects.length}** SLS projects in region **${input.region || 'default'}**:\n`,
-    lines.join('\n'),
-    '\nUse `list_logstores` to see logstores within a project.',
-  ].join('\n');
+  const allProjects: { projectName: string; description: string; region: string }[] = [];
+  const errors: string[] = [];
+
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    if (result.status === 'fulfilled') {
+      allProjects.push(...result.value);
+    } else {
+      errors.push(`${targetRegions[i]}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+    }
+  }
+
+  const lines: string[] = [];
+
+  if (allProjects.length > 0) {
+    // Group by region
+    const byRegion = new Map<string, typeof allProjects>();
+    for (const p of allProjects) {
+      if (!byRegion.has(p.region)) byRegion.set(p.region, []);
+      byRegion.get(p.region)!.push(p);
+    }
+
+    lines.push(`Found **${allProjects.length}** SLS projects across **${byRegion.size}** region(s):\n`);
+
+    for (const [region, projects] of byRegion) {
+      lines.push(`### ${region} (${projects.length} projects)`);
+      for (const p of projects) {
+        lines.push(`- **${p.projectName}**${p.description ? `  \n  ${p.description}` : ''}`);
+      }
+      lines.push('');
+    }
+  } else {
+    lines.push('No SLS projects found.');
+  }
+
+  if (errors.length > 0) {
+    lines.push(`\n**Errors in some regions:**`);
+    for (const e of errors) {
+      lines.push(`- ${e}`);
+    }
+  }
+
+  lines.push('\nUse `list_logstores` to see logstores within a project.');
+
+  return lines.join('\n');
 }

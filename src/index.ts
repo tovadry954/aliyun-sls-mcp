@@ -19,7 +19,7 @@ const TOOLS: Tool[] = [
   {
     name: 'list_projects',
     description:
-      'List all SLS projects in the specified Alibaba Cloud region. Use this to discover available projects before querying logs.',
+      'List all SLS projects in one or more Alibaba Cloud regions. Pass a single region string or an array of region IDs. If omitted, queries all regions configured in SLS_REGIONS / SLS_REGION env variables. Use this to discover available projects before querying logs.',
     inputSchema: zodToJsonSchema(listProjectsSchema) as Tool['inputSchema'],
   },
   {

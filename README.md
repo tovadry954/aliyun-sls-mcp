@@ -4,36 +4,72 @@
 
 **只读模式，不执行任何写入或删除操作。**
 
-[English](./README.en.md) | [GitHub](https://github.com/SuxyEE/aliyun-sls-mcp) | [npm](https://www.npmjs.com/package/aliyun-sls-mcp)
+[![npm version](https://img.shields.io/npm/v/aliyun-sls-mcp.svg)](https://www.npmjs.com/package/aliyun-sls-mcp) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[GitHub](https://github.com/SuxyEE/aliyun-sls-mcp) | [npm](https://www.npmjs.com/package/aliyun-sls-mcp)
+
+---
+
+## 这是什么？
+
+你有没有遇到过这种情况：线上出了问题，要去阿里云控制台一页页翻日志，又慢又麻烦？
+
+**aliyun-sls-mcp** 让你可以在 Cursor 或 Claude Desktop 的对话框里，直接用自然语言查询 SLS 日志：
+
+> "查一下 my-project 项目最近 15 分钟的错误日志"
+> 
+> "统计一下最近一小时各接口的报错次数"
+> 
+> "帮我排查今天上午 11 点左右 支付服务的 timeout 问题"
+
+AI 会自动调用 SLS API 查出日志，帮你分析问题。
+
+---
 
 ## 功能特性
 
-- **列出项目** — 按地域动态发现所有 SLS Project，无需手动配置项目列表
+- **列出项目** — 支持同时查询多个地域，自动发现所有 SLS Project
 - **列出日志库** — 浏览 Project 下的所有 Logstore
 - **查询日志** — 支持时间范围 + SLS 查询语法过滤，适合错误排查
 - **SQL 分析** — 对日志做聚合、统计、分组分析
-- **日志分布图** — ASCII 柱状图展示某时间段内的日志量分布，快速定位异常时间窗口
+- **日志分布图** — 展示某时间段内的日志量分布，快速定位异常时间窗口
 - **上下文日志** — 获取某条日志前后的日志，还原完整执行链路
 
 ---
 
-## 快速开始（npx 方式）
-
-> 推荐方式，无需克隆代码，配置完成后即可使用。
+## 快速开始
 
 ### 第一步：获取阿里云 AccessKey
 
-前往 [RAM 访问控制台](https://ram.console.aliyun.com/manage/ak) 创建 AccessKey，并为对应 RAM 用户授予以下权限：
+AccessKey 是访问阿里云 API 的凭证，类似账号密码，请妥善保管，不要泄露。
 
-```
-AliyunLogReadOnlyAccess
-```
+1. 打开 [阿里云 RAM 访问控制台](https://ram.console.aliyun.com/manage/ak)
+2. 点击「创建 AccessKey」
+3. 记下 **AccessKey ID** 和 **AccessKey Secret**（Secret 只显示一次，请立即保存）
 
-### 第二步：配置 MCP
+> **最佳实践**：建议创建一个子 RAM 用户，只授予 `AliyunLogReadOnlyAccess` 权限，而不是使用主账号的 AccessKey，这样即使 Key 泄露也不会影响其他服务。
 
-**Cursor**：编辑 `~/.cursor/mcp.json`（Windows: `%USERPROFILE%\.cursor\mcp.json`）
+---
 
-**Claude Desktop**：编辑 `~/Library/Application Support/Claude/claude_desktop_config.json`（Windows: `%APPDATA%\Claude\claude_desktop_config.json`）
+### 第二步：配置 MCP Server
+
+根据你使用的 AI 工具，找到对应的配置文件并编辑：
+
+**Cursor**
+
+| 系统 | 配置文件路径 |
+|------|-------------|
+| Windows | `%USERPROFILE%\.cursor\mcp.json` |
+| macOS / Linux | `~/.cursor/mcp.json` |
+
+**Claude Desktop**
+
+| 系统 | 配置文件路径 |
+|------|-------------|
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+
+在配置文件中添加以下内容（如果文件不存在就新建，如果已有内容就在 `mcpServers` 里追加）：
 
 ```json
 {
@@ -42,89 +78,108 @@ AliyunLogReadOnlyAccess
       "command": "npx",
       "args": ["-y", "aliyun-sls-mcp"],
       "env": {
-        "ALIBABA_CLOUD_ACCESS_KEY_ID": "your_access_key_id",
-        "ALIBABA_CLOUD_ACCESS_KEY_SECRET": "your_access_key_secret",
-        "SLS_REGION": "cn-hangzhou"
+        "ALIBABA_CLOUD_ACCESS_KEY_ID": "你的AccessKeyId",
+        "ALIBABA_CLOUD_ACCESS_KEY_SECRET": "你的AccessKeySecret",
+        "SLS_REGIONS": "cn-hangzhou,cn-shenzhen"
       }
     }
   }
 }
 ```
+
+**把以下内容替换成你自己的：**
+
+- `你的AccessKeyId` → 第一步获取的 AccessKey ID
+- `你的AccessKeySecret` → 第一步获取的 AccessKey Secret  
+- `cn-hangzhou,cn-shenzhen` → 你的 SLS 数据所在地域（多个地域用英文逗号分隔，单个地域直接填写即可，也可以只用 `SLS_REGION` 填一个）
+
+**地域 ID 怎么查？**
+
+登录 [阿里云 SLS 控制台](https://sls.console.aliyun.com/)，进入你的 Project，URL 里会有地域信息，如 `cn-shenzhen`。也可以参考本文末尾的[支持地域列表](#支持的地域)。
+
+---
 
 ### 第三步：重启 AI 客户端
 
-重启 Cursor 或 Claude Desktop，即可在对话中直接查询 SLS 日志。
+保存配置文件后，**完全退出**并重新打开 Cursor 或 Claude Desktop。
+
+重启后，在对话框输入以下内容验证是否配置成功：
+
+```
+帮我列出所有 SLS 项目
+```
+
+如果返回了你的项目列表，说明配置成功！
 
 ---
 
-## 本地开发 / 源码运行
-
-适合希望二次开发或尚未发布到 npm 时使用。
-
-### 克隆并构建
-
-```bash
-git clone https://github.com/your-name/aliyun-sls-mcp.git
-cd aliyun-sls-mcp
-npm install
-npm run build
-```
-
-### 配置 MCP（本地路径方式）
-
-```json
-{
-  "mcpServers": {
-    "aliyun-sls": {
-      "command": "node",
-      "args": ["/path/to/aliyun-sls-mcp/dist/index.js"],
-      "env": {
-        "ALIBABA_CLOUD_ACCESS_KEY_ID": "your_access_key_id",
-        "ALIBABA_CLOUD_ACCESS_KEY_SECRET": "your_access_key_secret",
-        "SLS_REGION": "cn-hangzhou"
-      }
-    }
-  }
-}
-```
-
-Windows 路径示例：
-
-```json
-"args": ["e:\\tools\\aliyun-sls-mcp\\dist\\index.js"]
-```
-
-### 本地验证
-
-```bash
-node dist/index.js
-# 输出: Aliyun SLS MCP Server running on stdio
-```
-
----
-
-## 环境变量
+## 环境变量说明
 
 | 变量名 | 是否必填 | 说明 |
 |--------|----------|------|
 | `ALIBABA_CLOUD_ACCESS_KEY_ID` | ✅ 必填 | 阿里云 AccessKey ID |
 | `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | ✅ 必填 | 阿里云 AccessKey Secret |
-| `SLS_REGION` | 可选 | 默认地域，如 `cn-hangzhou`。所有工具调用时可通过 `region` 参数单独覆盖 |
-| `SLS_NETWORK` | 可选 | 网络类型：`public`（默认，公网）或 `vpc`（VPC 私网） |
+| `SLS_REGIONS` | 二选一 | 多地域配置，英文逗号分隔，如 `cn-hangzhou,cn-shenzhen,cn-beijing` |
+| `SLS_REGION` | 二选一 | 单地域配置，如 `cn-hangzhou`。`SLS_REGIONS` 优先级更高 |
+| `SLS_NETWORK` | 可选 | 网络类型：`public`（默认，公网）或 `vpc`（VPC 内网，适合服务器部署） |
 
-> **多地域支持**：只需配置一个默认地域，所有工具均支持通过 `region` 参数动态切换到任意地域的项目，无需为每个地域单独部署。
+> `SLS_REGIONS` 和 `SLS_REGION` 至少配置一个。若两者都不配置，默认使用 `cn-hangzhou`。
 
 ---
 
-## 可用工具
+## 对话使用示例
+
+配置成功后，你可以用自然语言告诉 AI 你想做什么，AI 会自动调用合适的工具：
+
+**发现资源**
+
+```
+列出所有 SLS 项目（会查询所有配置的地域）
+
+列出深圳地域的 SLS 项目
+
+列出 my-project 项目下所有的日志库
+```
+
+**查询日志**
+
+```
+查询 my-project 项目 app-logs 日志库最近 15 分钟的错误日志
+
+查找 order-service 最近 1 小时内包含 "timeout" 的日志
+
+查询 cn-shanghai 地域 payment-project 项目 order-logs 中最近 30 分钟的日志
+```
+
+**统计分析**
+
+```
+统计 my-project 最近 1 小时各接口的报错次数，按数量排序
+
+查看 my-project app-logs 最近 1 小时的日志量分布，找出流量高峰时间点
+
+统计今天各函数的调用量和平均耗时
+```
+
+**问题排查**
+
+```
+帮我排查 2026-03-19 11:00 到 11:30 之间 payment 函数出现的 SLOW SQL 问题
+
+查一下刚才那条报错日志的前后 20 条日志，看看完整的执行链路
+```
+
+---
+
+## 可用工具详情
 
 ### `list_projects` — 列出项目
 
-列出指定地域下的所有 SLS Project。
+列出一个或多个地域下的所有 SLS Project。
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `region` | string | 否 | 地域 ID，默认使用 `SLS_REGION` |
+| `regions` | string 或 string[] | 否 | 地域 ID，支持单个字符串或数组。不填则查询 `SLS_REGIONS` / `SLS_REGION` 配置的所有地域 |
 
 ---
 
@@ -135,7 +190,7 @@ node dist/index.js
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `project` | string | ✅ | SLS Project 名称 |
-| `region` | string | 否 | 地域 ID |
+| `region` | string | 否 | 地域 ID，不填则使用默认地域 |
 
 ---
 
@@ -147,10 +202,10 @@ node dist/index.js
 |------|------|------|--------|------|
 | `project` | string | ✅ | — | SLS Project 名称 |
 | `logstore` | string | ✅ | — | Logstore 名称 |
-| `query` | string | 否 | `*` | SLS 查询语句 |
-| `time_range` | string | 否 | `15m` | 相对时间范围 |
-| `from` | number | 否 | — | 开始时间（Unix 秒），优先于 `time_range` |
-| `to` | number | 否 | — | 结束时间（Unix 秒） |
+| `query` | string | 否 | `*` | SLS 查询语句（见下方示例） |
+| `time_range` | string | 否 | `15m` | 相对时间范围，如 `15m`、`1h`、`1d` |
+| `from` | number | 否 | — | 开始时间（Unix 时间戳，秒），与 `to` 同时使用，优先级高于 `time_range` |
+| `to` | number | 否 | — | 结束时间（Unix 时间戳，秒） |
 | `max_logs` | number | 否 | `50` | 最多返回条数（1-500） |
 | `region` | string | 否 | — | 地域 ID |
 
@@ -162,9 +217,10 @@ node dist/index.js
 *                              # 所有日志
 level: ERROR                   # 错误级别日志
 content: timeout               # 包含 timeout 的日志
-level: ERROR AND status: 500   # 组合条件
+level: ERROR AND status: 500   # 组合条件（AND 连接）
+level: ERROR OR level: WARN    # 任一条件（OR 连接）
 NOT level: INFO                # 排除 INFO 日志
-requestId: abc-123             # 按请求 ID 追踪
+requestId: "abc-123-xyz"       # 按请求 ID 追踪
 ```
 
 ---
@@ -176,7 +232,7 @@ requestId: abc-123             # 按请求 ID 追踪
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `project` | string | ✅ | — | SLS Project 名称 |
-| `query` | string | ✅ | — | SQL 语句，FROM 子句指定 Logstore 名称 |
+| `query` | string | ✅ | — | SQL 语句，FROM 子句填写 Logstore 名称 |
 | `time_range` | string | 否 | `1h` | 时间范围 |
 | `from` | number | 否 | — | 开始时间（Unix 秒） |
 | `to` | number | 否 | — | 结束时间（Unix 秒） |
@@ -185,26 +241,31 @@ requestId: abc-123             # 按请求 ID 追踪
 **SQL 示例：**
 
 ```sql
--- 按函数名统计调用量
+-- 统计各函数调用量，按数量降序
 SELECT functionName, count(*) as total
-FROM default-logs
-WHERE __time__ > 1700000000
+FROM my-logstore
 GROUP BY functionName
 ORDER BY total DESC
 
 -- 统计各状态码数量
 SELECT statusCode, count(*) as cnt
-FROM default-logs
-WHERE __time__ > 1700000000 AND statusCode != ''
+FROM my-logstore
+WHERE statusCode != ''
 GROUP BY statusCode
 ORDER BY cnt DESC
+
+-- 统计最近 1 小时每分钟的日志量趋势
+SELECT date_trunc('minute', __time__) as t, count(*) as cnt
+FROM my-logstore
+GROUP BY t
+ORDER BY t
 ```
 
 ---
 
 ### `get_log_histogram` — 日志分布图
 
-获取某段时间内日志量的分钟级分布，以 ASCII 柱状图展示，用于快速定位流量异常或错误高峰时间点。
+获取某段时间内日志量的分布，用于快速定位流量异常或错误高峰时间点。
 
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
@@ -230,7 +291,7 @@ ORDER BY cnt DESC
 
 获取某条日志前后的若干条日志，还原事件发生前后的完整执行链路。
 
-> 需要日志包含 `__tag__:__pack_meta__` 字段。阿里云 FC 函数计算的日志通常没有该字段，可改用 `query_logs` 按 `__tag__:__pack_id__` 过滤同一批次的日志。
+> **注意**：此工具需要日志包含 `__tag__:__pack_meta__` 字段。阿里云函数计算（FC）的日志通常没有该字段，可以改用 `query_logs` 按 `__tag__:__pack_id__` 过滤同一批次的日志来达到类似效果。
 
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
@@ -244,20 +305,76 @@ ORDER BY cnt DESC
 
 ---
 
-## 对话使用示例
+## 常见问题
+
+**Q：配置后 AI 说连不上 / 工具调用失败？**
+
+1. 检查 AccessKey ID 和 Secret 是否填写正确，注意不要有多余空格
+2. 检查地域 ID 是否正确（如深圳是 `cn-shenzhen`，不是 `shenzhen`）
+3. 确认 RAM 用户已授予 `AliyunLogReadOnlyAccess` 权限
+4. 确保 Node.js >= 18 已安装（命令行执行 `node -v` 检查）
+5. 完全重启 Cursor 或 Claude Desktop
+
+**Q：提示 "No SLS projects found" 但我确实有项目？**
+
+可能是地域填错了。登录 SLS 控制台确认你的 Project 所在地域，然后告诉 AI：
 
 ```
-列出深圳地域所有 SLS 项目
+查询 cn-shenzhen 地域的 SLS 项目
+```
 
-查询 my-project 项目 app-logs 日志库最近 15 分钟的错误日志
+**Q：`SLS_REGIONS` 和 `SLS_REGION` 有什么区别？**
 
-查看 my-project 最近 1 小时的日志量分布，找出流量高峰时间点
+- `SLS_REGIONS`：配置多个地域，用逗号分隔，如 `cn-hangzhou,cn-shenzhen`
+- `SLS_REGION`：只配置一个地域
+- 两者都配置时，`SLS_REGIONS` 优先
+- 不填任何一个时，默认使用 `cn-hangzhou`
 
-统计 my-project 最近 1 小时各函数的调用量
+**Q：查不到 FC 函数计算的上下文日志？**
 
-查询 cn-shanghai 地域 payment-project 项目 order-logs 中包含 timeout 的日志
+FC 日志不包含 `__pack_meta__` 字段，无法使用 `get_context_logs`。可以这样替代：
 
-帮我排查 2026-03-19 11:00 到 11:30 之间 xyjapi 函数出现的 SLOW SQL 问题
+```
+查询 my-project fc-logs 中 __tag__:__pack_id__ 为 "xxx" 的所有日志
+```
+
+---
+
+## 本地开发 / 源码运行
+
+适合希望二次开发的用户。
+
+```bash
+git clone https://github.com/SuxyEE/aliyun-sls-mcp.git
+cd aliyun-sls-mcp
+npm install
+npm run build
+```
+
+配置 MCP 时使用本地路径：
+
+```json
+{
+  "mcpServers": {
+    "aliyun-sls": {
+      "command": "node",
+      "args": ["e:\\tools\\aliyun-sls-mcp\\dist\\index.js"],
+      "env": {
+        "ALIBABA_CLOUD_ACCESS_KEY_ID": "你的AccessKeyId",
+        "ALIBABA_CLOUD_ACCESS_KEY_SECRET": "你的AccessKeySecret",
+        "SLS_REGIONS": "cn-hangzhou,cn-shenzhen"
+      }
+    }
+  }
+}
+```
+
+开发命令：
+
+```bash
+npm run dev    # 监听文件变化，自动重新编译
+npm run build  # 构建一次
+npm start      # 运行（用于验证启动是否正常）
 ```
 
 ---
@@ -325,17 +442,8 @@ ORDER BY cnt DESC
 
 - **语言**：TypeScript
 - **运行时**：Node.js >= 18
-- **MCP SDK**：`@modelcontextprotocol/sdk` ^1.27.1
-- **SLS SDK**：`@alicloud/sls20201230` ^5.9.0
-
-## 本地开发
-
-```bash
-npm install        # 安装依赖
-npm run dev        # 监听变化自动编译
-npm run build      # 构建
-npm start          # 运行
-```
+- **MCP SDK**：`@modelcontextprotocol/sdk`
+- **SLS SDK**：`@alicloud/sls20201230`
 
 ## License
 

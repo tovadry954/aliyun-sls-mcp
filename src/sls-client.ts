@@ -77,6 +77,23 @@ function getConfigFromEnv(): SlsConfig {
   };
 }
 
+/**
+ * 读取环境变量中配置的所有地域列表。
+ * 优先读取 SLS_REGIONS（逗号分隔多个），其次 SLS_REGION（单个），
+ * 默认返回 ['cn-hangzhou']。
+ */
+export function getConfiguredRegions(): string[] {
+  const regionsEnv = process.env.SLS_REGIONS;
+  if (regionsEnv) {
+    return regionsEnv.split(',').map((r) => r.trim()).filter(Boolean);
+  }
+  const regionEnv = process.env.SLS_REGION;
+  if (regionEnv) {
+    return [regionEnv.trim()];
+  }
+  return ['cn-hangzhou'];
+}
+
 export async function listProjects(
   region?: string
 ): Promise<{ projectName: string; description: string; region: string }[]> {

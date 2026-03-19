@@ -1,6 +1,6 @@
 {
   "name": "aliyun-sls-mcp",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "MCP server for Alibaba Cloud SLS (Simple Log Service) - query logs to assist development debugging",
   "keywords": [
     "mcp",
@@ -16,7 +16,7 @@
   "homepage": "https://github.com/SuxyEE/aliyun-sls-mcp#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SuxyEE/aliyun-sls-mcp.git"
+    "url": "git+https://github.com/SuxyEE/aliyun-sls-mcp.git"
   },
   "bugs": {
     "url": "https://github.com/SuxyEE/aliyun-sls-mcp/issues"

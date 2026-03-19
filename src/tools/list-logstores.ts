@@ -6,7 +6,7 @@ export const listLogStoresSchema = z.object({
   region: z
     .string()
     .optional()
-    .describe('Alibaba Cloud region ID, e.g. cn-hangzhou. Defaults to SLS_REGION env variable.'),
+    .describe('Alibaba Cloud region ID where the project resides, e.g. cn-hangzhou, cn-shenzhen. Defaults to SLS_REGION env variable.'),
 });
 
 export type ListLogStoresInput = z.infer<typeof listLogStoresSchema>;
