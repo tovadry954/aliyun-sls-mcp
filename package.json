@@ -1,6 +1,6 @@
 {
   "name": "aliyun-sls-mcp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MCP server for Alibaba Cloud SLS (Simple Log Service) - query logs to assist development debugging",
   "keywords": [
     "mcp",

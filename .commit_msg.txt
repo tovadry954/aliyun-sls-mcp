@@ -1,0 +1,5 @@
+refactor: merge SLS_REGION into SLS_REGIONS, remove redundant env var
+
+SLS_REGIONS now handles both single and multiple regions (comma-separated).
+SLS_REGION is no longer needed and has been removed.
+Update README and bump version to 0.1.3.

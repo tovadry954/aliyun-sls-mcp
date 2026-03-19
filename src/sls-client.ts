@@ -59,6 +59,15 @@ function buildClient(slsConfig: SlsConfig): any {
   return new SlsClient(config);
 }
 
+function getDefaultRegion(): string {
+  const regionsEnv = process.env.SLS_REGIONS;
+  if (regionsEnv) {
+    const first = regionsEnv.split(',')[0].trim();
+    if (first) return first;
+  }
+  return 'cn-hangzhou';
+}
+
 function getConfigFromEnv(): SlsConfig {
   const accessKeyId = process.env.ALIBABA_CLOUD_ACCESS_KEY_ID;
   const accessKeySecret = process.env.ALIBABA_CLOUD_ACCESS_KEY_SECRET;
@@ -72,24 +81,19 @@ function getConfigFromEnv(): SlsConfig {
   return {
     accessKeyId,
     accessKeySecret,
-    region: process.env.SLS_REGION || 'cn-hangzhou',
+    region: getDefaultRegion(),
     network: (process.env.SLS_NETWORK as 'public' | 'vpc') || 'public',
   };
 }
 
 /**
- * 读取环境变量中配置的所有地域列表。
- * 优先读取 SLS_REGIONS（逗号分隔多个），其次 SLS_REGION（单个），
+ * 读取 SLS_REGIONS 环境变量中配置的所有地域列表（逗号分隔，也可只写一个）。
  * 默认返回 ['cn-hangzhou']。
  */
 export function getConfiguredRegions(): string[] {
   const regionsEnv = process.env.SLS_REGIONS;
   if (regionsEnv) {
     return regionsEnv.split(',').map((r) => r.trim()).filter(Boolean);
-  }
-  const regionEnv = process.env.SLS_REGION;
-  if (regionEnv) {
-    return [regionEnv.trim()];
   }
   return ['cn-hangzhou'];
 }
