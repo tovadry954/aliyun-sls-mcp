@@ -1,0 +1,53 @@
+{
+  "name": "aliyun-sls-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Alibaba Cloud SLS (Simple Log Service) - query logs to assist development debugging",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "sls",
+    "alibaba-cloud",
+    "aliyun",
+    "logs",
+    "log-service",
+    "serverless"
+  ],
+  "author": "SuxyEE",
+  "homepage": "https://github.com/SuxyEE/aliyun-sls-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SuxyEE/aliyun-sls-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SuxyEE/aliyun-sls-mcp/issues"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "aliyun-sls-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@alicloud/openapi-core": "^1.0.0",
+    "@alicloud/sls20201230": "^5.9.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.25.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
