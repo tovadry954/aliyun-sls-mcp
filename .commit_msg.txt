@@ -1,4 +1,3 @@
-docs: add supported log sources section to README
+docs: improve README header for SEO and readability
 
-Cover FC, SAE, ECS/Logtail, ACK, API Gateway, SLB, CDN, RDS log scenarios
-with example queries for each use case.
+Add subtitle, key features summary, npm downloads badge, and SLS docs link.

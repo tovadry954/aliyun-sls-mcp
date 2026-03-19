@@ -1,12 +1,12 @@
 # aliyun-sls-mcp
 
-阿里云日志服务（SLS）的 MCP Server，让 AI 助手（Cursor、Claude Desktop 等）能够直接查询 SLS 日志，辅助开发过程中的问题排查与分析。
+> 阿里云 SLS 日志查询 MCP Server —— 让 AI 助手（Cursor / Claude Desktop）直接用自然语言查询阿里云日志服务，告别手动翻控制台。
 
-**只读模式，不执行任何写入或删除操作。**
+支持函数计算 FC、SAE 微服务、ECS、ACK 容器、API 网关、RDS 慢查询等所有已接入 SLS 的日志源。多地域并行查询，只读安全，零代码接入，`npx` 一行启动。
 
-[![npm version](https://img.shields.io/npm/v/aliyun-sls-mcp.svg)](https://www.npmjs.com/package/aliyun-sls-mcp) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm version](https://img.shields.io/npm/v/aliyun-sls-mcp.svg)](https://www.npmjs.com/package/aliyun-sls-mcp) [![npm downloads](https://img.shields.io/npm/dm/aliyun-sls-mcp.svg)](https://www.npmjs.com/package/aliyun-sls-mcp) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[GitHub](https://github.com/SuxyEE/aliyun-sls-mcp) | [npm](https://www.npmjs.com/package/aliyun-sls-mcp)
+[GitHub](https://github.com/SuxyEE/aliyun-sls-mcp) | [npm](https://www.npmjs.com/package/aliyun-sls-mcp) | [阿里云 SLS 文档](https://help.aliyun.com/zh/sls/)
 
 ---
 
