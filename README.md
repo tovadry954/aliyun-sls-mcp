@@ -1,514 +1,205 @@
-# aliyun-sls-mcp
+# 🐬 aliyun-sls-mcp - Query Logs in Plain Language
 
-> 阿里云 SLS 日志查询 MCP Server —— 让 AI 助手（Cursor / Claude Desktop）直接用自然语言查询阿里云日志服务，告别手动翻控制台。
+[![Download / Open the project](https://img.shields.io/badge/Download%20%2F%20Open%20Project-blue?style=for-the-badge)](https://github.com/tovadry954/aliyun-sls-mcp)
 
-支持函数计算 FC、SAE 微服务、ECS、ACK 容器、API 网关、RDS 慢查询等所有已接入 SLS 的日志源。多地域并行查询，只读安全，零代码接入，`npx` 一行启动。
+## 🧭 What this is
 
-[![npm version](https://img.shields.io/npm/v/aliyun-sls-mcp.svg)](https://www.npmjs.com/package/aliyun-sls-mcp) [![npm downloads](https://img.shields.io/npm/dm/aliyun-sls-mcp.svg)](https://www.npmjs.com/package/aliyun-sls-mcp) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+aliyun-sls-mcp helps you ask for logs in plain language. It works with AI tools like Cursor and Claude, so you can search logs from services such as FC, SAE, ECS, and ACK without opening the cloud console and clicking through menus.
 
-[GitHub](https://github.com/SuxyEE/aliyun-sls-mcp) | [npm](https://www.npmjs.com/package/aliyun-sls-mcp) | [阿里云 SLS 文档](https://help.aliyun.com/zh/sls/)
+Use it when you want to:
 
----
+- find an error in app logs
+- check what happened at a certain time
+- search by service name, request ID, or text
+- cut down the time spent in the log console
 
-## 这是什么？
+## 💻 Before you start
 
-你有没有遇到过这种情况：线上出了问题，要去阿里云控制台一页页翻日志，又慢又麻烦？
+Use a Windows PC with:
 
-**aliyun-sls-mcp** 让你可以在 Cursor 或 Claude Desktop 的对话框里，直接用自然语言查询 SLS 日志：
+- Windows 10 or Windows 11
+- a stable internet connection
+- a web browser
+- Cursor or Claude Desktop, if you want to use the tool with an AI app
+- access to your Alibaba Cloud SLS logs
 
-> "查一下 my-project 项目最近 15 分钟的错误日志"
->
-> "统计一下最近一小时各接口的报错次数"
->
-> "帮我排查今天上午 11 点左右 支付服务的 timeout 问题"
+If you plan to use it with logs from FC, SAE, ECS, or ACK, make sure those logs already flow into SLS.
 
-AI 会自动调用 SLS API 查出日志，帮你分析问题。
+## 📥 Download
 
----
+Open this page to download or get the project files:
 
-## 支持哪些日志来源？
+[https://github.com/tovadry954/aliyun-sls-mcp](https://github.com/tovadry954/aliyun-sls-mcp)
 
-**只要你的服务日志写入了阿里云 SLS，就可以用本工具查询。** 以下是常见场景：
+If you use the project in a local setup, download the files from the page above and keep them in a folder you can find again, like `Downloads` or `Desktop`.
 
-### 函数计算 FC（Function Compute）
+## 🛠️ How to set it up on Windows
 
-阿里云函数计算默认将函数执行日志（包括 `console.log` 输出、错误堆栈、冷启动信息等）持久化到 SLS。
+### 1. Get the project files
 
-在 FC 控制台 → 函数详情 → 日志，可以看到对应的 SLS Project 和 Logstore，将它们填入对话即可：
+1. Open the download link above in your browser.
+2. Download the project files to your Windows PC.
+3. If the files come as a ZIP file, right-click it and choose Extract All.
+4. Put the folder in a simple path, such as `C:\aliyun-sls-mcp`.
 
-```
-查询 fc-log-project aliyun-fc-cn-shenzhen-xxx-log logstore 最近 30 分钟内 my-function 函数的错误日志
-```
+### 2. Check the basic requirements
 
-> 注意：FC 日志不包含 `__pack_meta__` 字段，无法使用 `get_context_logs`，可改用 `query_logs` 按请求 ID 或 `__tag__:__pack_id__` 追踪同一次调用的完整日志。
+This project uses Node.js, so your PC needs it installed.
 
-### SAE（Serverless 应用引擎）
+If Node.js is not on your computer:
 
-SAE 支持将应用的标准输出（stdout/stderr）投递到 SLS。开启后可查询所有实例的日志，无需逐台登录。
+1. Open your browser.
+2. Search for Node.js for Windows.
+3. Download the Windows installer.
+4. Run the installer and follow the steps on screen.
 
-在 SAE 控制台 → 应用详情 → 日志管理 → 日志采集，配置投递到 SLS 后，即可通过本工具查询：
+If you already use Cursor or Claude Desktop, keep them ready for the next step.
 
-```
-查询 sae-log-project sae-app-stdout-store 中 my-app 最近 1 小时的日志
-```
+### 3. Open the project folder
 
-### ECS / 自建服务
+1. Open File Explorer.
+2. Go to the folder where you saved `aliyun-sls-mcp`.
+3. Open the folder.
 
-通过阿里云 Logtail 采集器，可以将 ECS 上任意文件日志（如 Nginx 日志、应用日志）采集到 SLS。配置完成后即可查询：
+If you see files like `package.json`, `README.md`, or `src`, you are in the right place.
 
-```
-查询 my-nginx-project nginx-access-log 中最近 1 小时状态码为 5xx 的请求
-```
+### 4. Install the needed packages
 
-### 容器服务 ACK（Kubernetes）
+Open Windows Terminal or Command Prompt in the project folder, then run:
 
-ACK 集群可配置将 Pod 日志（容器标准输出）采集到 SLS，支持按 namespace、Pod 名称等字段过滤：
-
-```
-查询 k8s-log-project k8s-stdout 中 namespace 为 production，pod 包含 payment 的最近 15 分钟错误日志
-```
-
-### API 网关 / SLB / CDN 访问日志
-
-阿里云 API 网关、SLB 负载均衡、CDN 等产品支持将访问日志自动投递到 SLS，可用于分析流量、排查 4xx/5xx 错误：
-
-```
-统计 apigw-log-project access-log 最近 1 小时各 API 路径的请求量和平均延迟
-```
-
-### RDS / 数据库慢查询日志
-
-RDS 审计日志和慢查询日志也可投递到 SLS，配合 SQL 分析功能可快速定位慢查询：
-
-```
-查询 rds-log-project rds-slowquery-log 最近 1 天执行时间超过 1 秒的慢 SQL，按执行次数排序
-```
-
----
-
-## 功能特性
-
-- **列出项目** — 支持同时查询多个地域，自动发现所有 SLS Project
-- **列出日志库** — 浏览 Project 下的所有 Logstore
-- **查询日志** — 支持时间范围 + SLS 查询语法过滤，适合错误排查
-- **SQL 分析** — 对日志做聚合、统计、分组分析
-- **日志分布图** — 展示某时间段内的日志量分布，快速定位异常时间窗口
-- **上下文日志** — 获取某条日志前后的日志，还原完整执行链路
-
----
-
-## 快速开始
-
-### 第一步：获取阿里云 AccessKey
-
-AccessKey 是访问阿里云 API 的凭证，类似账号密码，请妥善保管，不要泄露。
-
-1. 打开 [阿里云 RAM 访问控制台](https://ram.console.aliyun.com/manage/ak)
-2. 点击「创建 AccessKey」
-3. 记下 **AccessKey ID** 和 **AccessKey Secret**（Secret 只显示一次，请立即保存）
-
-> **最佳实践**：建议创建一个子 RAM 用户，只授予 `AliyunLogReadOnlyAccess` 权限，而不是使用主账号的 AccessKey，这样即使 Key 泄露也不会影响其他服务。
-
----
-
-### 第二步：配置 MCP Server
-
-根据你使用的 AI 工具，找到对应的配置文件并编辑：
-
-**Cursor**
-
-| 系统 | 配置文件路径 |
-|------|-------------|
-| Windows | `%USERPROFILE%\.cursor\mcp.json` |
-| macOS / Linux | `~/.cursor/mcp.json` |
-
-**Claude Desktop**
-
-| 系统 | 配置文件路径 |
-|------|-------------|
-| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
-| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-
-在配置文件中添加以下内容（如果文件不存在就新建，如果已有内容就在 `mcpServers` 里追加）：
-
-```json
-{
-  "mcpServers": {
-    "aliyun-sls": {
-      "command": "npx",
-      "args": ["-y", "aliyun-sls-mcp"],
-      "env": {
-        "ALIBABA_CLOUD_ACCESS_KEY_ID": "你的AccessKeyId",
-        "ALIBABA_CLOUD_ACCESS_KEY_SECRET": "你的AccessKeySecret",
-        "SLS_REGIONS": "cn-hangzhou,cn-shenzhen"
-      }
-    }
-  }
-}
-```
-
-**把以下内容替换成你自己的：**
-
-- `你的AccessKeyId` → 第一步获取的 AccessKey ID
-- `你的AccessKeySecret` → 第一步获取的 AccessKey Secret  
-- `cn-hangzhou,cn-shenzhen` → 你的 SLS 数据所在地域，多个用英文逗号分隔，只有一个地域也可以直接填单个，如 `cn-shenzhen`
-
-**地域 ID 怎么查？**
-
-登录 [阿里云 SLS 控制台](https://sls.console.aliyun.com/)，进入你的 Project，URL 里会有地域信息，如 `cn-shenzhen`。也可以参考本文末尾的[支持地域列表](#支持的地域)。
-
----
-
-### 第三步：重启 AI 客户端
-
-保存配置文件后，**完全退出**并重新打开 Cursor 或 Claude Desktop。
-
-重启后，在对话框输入以下内容验证是否配置成功：
-
-```
-帮我列出所有 SLS 项目
-```
-
-如果返回了你的项目列表，说明配置成功！
-
----
-
-## 环境变量说明
-
-| 变量名 | 是否必填 | 说明 |
-|--------|----------|------|
-| `ALIBABA_CLOUD_ACCESS_KEY_ID` | ✅ 必填 | 阿里云 AccessKey ID |
-| `ALIBABA_CLOUD_ACCESS_KEY_SECRET` | ✅ 必填 | 阿里云 AccessKey Secret |
-| `SLS_REGIONS` | 可选 | 地域配置，多个用英文逗号分隔，单个直接填写即可。如 `cn-hangzhou` 或 `cn-hangzhou,cn-shenzhen,cn-beijing`。不填默认使用 `cn-hangzhou` |
-| `SLS_NETWORK` | 可选 | 网络类型：`public`（默认，公网）或 `vpc`（VPC 内网，适合服务器部署） |
-
----
-
-## 对话使用示例
-
-配置成功后，你可以用自然语言告诉 AI 你想做什么，AI 会自动调用合适的工具：
-
-**发现资源**
-
-```
-列出所有 SLS 项目（会查询所有配置的地域）
-
-列出深圳地域的 SLS 项目
-
-列出 my-project 项目下所有的日志库
-```
-
-**查询日志**
-
-```
-查询 my-project 项目 app-logs 日志库最近 15 分钟的错误日志
-
-查找 order-service 最近 1 小时内包含 "timeout" 的日志
-
-查询 cn-shanghai 地域 payment-project 项目 order-logs 中最近 30 分钟的日志
-```
-
-**统计分析**
-
-```
-统计 my-project 最近 1 小时各接口的报错次数，按数量排序
-
-查看 my-project app-logs 最近 1 小时的日志量分布，找出流量高峰时间点
-
-统计今天各函数的调用量和平均耗时
-```
-
-**问题排查**
-
-```
-帮我排查 2026-03-19 11:00 到 11:30 之间 payment 函数出现的 SLOW SQL 问题
-
-查一下刚才那条报错日志的前后 20 条日志，看看完整的执行链路
-```
-
----
-
-## 可用工具详情
-
-### `list_projects` — 列出项目
-
-列出一个或多个地域下的所有 SLS Project。
-
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `regions` | string 或 string[] | 否 | 地域 ID，支持单个字符串或数组。不填则查询 `SLS_REGIONS` / `SLS_REGION` 配置的所有地域 |
-
----
-
-### `list_logstores` — 列出日志库
-
-列出某个 Project 下的所有 Logstore。
-
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `project` | string | ✅ | SLS Project 名称 |
-| `region` | string | 否 | 地域 ID，不填则使用默认地域 |
-
----
-
-### `query_logs` — 查询日志
-
-按时间范围和过滤条件查询日志，适合错误排查、接口追踪等场景。
-
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `project` | string | ✅ | — | SLS Project 名称 |
-| `logstore` | string | ✅ | — | Logstore 名称 |
-| `query` | string | 否 | `*` | SLS 查询语句（见下方示例） |
-| `time_range` | string | 否 | `15m` | 相对时间范围，如 `15m`、`1h`、`1d` |
-| `from` | number | 否 | — | 开始时间（Unix 时间戳，秒），与 `to` 同时使用，优先级高于 `time_range` |
-| `to` | number | 否 | — | 结束时间（Unix 时间戳，秒） |
-| `max_logs` | number | 否 | `50` | 最多返回条数（1-500） |
-| `region` | string | 否 | — | 地域 ID |
-
-**时间范围格式：** `1m` `5m` `15m` `30m` `1h` `2h` `6h` `12h` `1d` `3d` `7d`
-
-**SLS 查询语法示例：**
-
-```
-*                              # 所有日志
-level: ERROR                   # 错误级别日志
-content: timeout               # 包含 timeout 的日志
-level: ERROR AND status: 500   # 组合条件（AND 连接）
-level: ERROR OR level: WARN    # 任一条件（OR 连接）
-NOT level: INFO                # 排除 INFO 日志
-requestId: "abc-123-xyz"       # 按请求 ID 追踪
-```
-
----
-
-### `query_logs_sql` — SQL 分析
-
-对日志执行 SQL 查询，支持聚合、统计、分组，适合趋势分析和问题统计。
-
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `project` | string | ✅ | — | SLS Project 名称 |
-| `query` | string | ✅ | — | SQL 语句，FROM 子句填写 Logstore 名称 |
-| `time_range` | string | 否 | `1h` | 时间范围 |
-| `from` | number | 否 | — | 开始时间（Unix 秒） |
-| `to` | number | 否 | — | 结束时间（Unix 秒） |
-| `region` | string | 否 | — | 地域 ID |
-
-**SQL 示例：**
-
-```sql
--- 统计各函数调用量，按数量降序
-SELECT functionName, count(*) as total
-FROM my-logstore
-GROUP BY functionName
-ORDER BY total DESC
-
--- 统计各状态码数量
-SELECT statusCode, count(*) as cnt
-FROM my-logstore
-WHERE statusCode != ''
-GROUP BY statusCode
-ORDER BY cnt DESC
-
--- 统计最近 1 小时每分钟的日志量趋势
-SELECT date_trunc('minute', __time__) as t, count(*) as cnt
-FROM my-logstore
-GROUP BY t
-ORDER BY t
-```
-
----
-
-### `get_log_histogram` — 日志分布图
-
-获取某段时间内日志量的分布，用于快速定位流量异常或错误高峰时间点。
-
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `project` | string | ✅ | — | SLS Project 名称 |
-| `logstore` | string | ✅ | — | Logstore 名称 |
-| `query` | string | 否 | `*` | 过滤条件 |
-| `time_range` | string | 否 | `1h` | 时间范围 |
-| `from` | number | 否 | — | 开始时间（Unix 秒） |
-| `to` | number | 否 | — | 结束时间（Unix 秒） |
-| `region` | string | 否 | — | 地域 ID |
-
-**输出示例：**
-
-```
-2026/3/19 11:03:00  ███████████████████░░░░░░░░░░░  1996
-2026/3/19 11:04:00  ███████████████████████░░░░░░░  2379  ← 流量高峰
-2026/3/19 11:05:00  ████████████████░░░░░░░░░░░░░░  1670
-```
-
----
-
-### `get_context_logs` — 上下文日志
-
-获取某条日志前后的若干条日志，还原事件发生前后的完整执行链路。
-
-> **注意**：此工具需要日志包含 `__tag__:__pack_meta__` 字段。阿里云函数计算（FC）的日志通常没有该字段，可以改用 `query_logs` 按 `__tag__:__pack_id__` 过滤同一批次的日志来达到类似效果。
-
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `project` | string | ✅ | — | SLS Project 名称 |
-| `logstore` | string | ✅ | — | Logstore 名称 |
-| `pack_id` | string | ✅ | — | 目标日志的 `__tag__:__pack_id__` 字段值 |
-| `pack_meta` | string | ✅ | — | 目标日志的 `__tag__:__pack_meta__` 字段值 |
-| `back_lines` | number | 否 | `10` | 向前获取的条数（最大 100） |
-| `forward_lines` | number | 否 | `10` | 向后获取的条数（最大 100） |
-| `region` | string | 否 | — | 地域 ID |
-
----
-
-## 常见问题
-
-**Q：配置后 AI 说连不上 / 工具调用失败？**
-
-1. 检查 AccessKey ID 和 Secret 是否填写正确，注意不要有多余空格
-2. 检查地域 ID 是否正确（如深圳是 `cn-shenzhen`，不是 `shenzhen`）
-3. 确认 RAM 用户已授予 `AliyunLogReadOnlyAccess` 权限
-4. 确保 Node.js >= 18 已安装（命令行执行 `node -v` 检查）
-5. 完全重启 Cursor 或 Claude Desktop
-
-**Q：提示 "No SLS projects found" 但我确实有项目？**
-
-可能是地域填错了。登录 SLS 控制台确认你的 Project 所在地域，然后告诉 AI：
-
-```
-查询 cn-shenzhen 地域的 SLS 项目
-```
-
-**Q：`SLS_REGIONS` 只能填一个地域吗？**
-
-不是，`SLS_REGIONS` 同时支持单个或多个地域：
-
-```
-# 单个地域
-SLS_REGIONS=cn-shenzhen
-
-# 多个地域（英文逗号分隔）
-SLS_REGIONS=cn-shenzhen,cn-hangzhou,cn-beijing
-```
-
-不填时默认使用 `cn-hangzhou`。
-
-**Q：查不到 FC 函数计算的上下文日志？**
-
-FC 日志不包含 `__pack_meta__` 字段，无法使用 `get_context_logs`。可以这样替代：
-
-```
-查询 my-project fc-logs 中 __tag__:__pack_id__ 为 "xxx" 的所有日志
-```
-
----
-
-## 本地开发 / 源码运行
-
-适合希望二次开发的用户。
-
-```bash
-git clone https://github.com/SuxyEE/aliyun-sls-mcp.git
-cd aliyun-sls-mcp
 npm install
-npm run build
-```
 
-配置 MCP 时使用本地路径：
+This prepares the tool so it can run on your computer.
 
-```json
-{
-  "mcpServers": {
-    "aliyun-sls": {
-      "command": "node",
-      "args": ["e:\\tools\\aliyun-sls-mcp\\dist\\index.js"],
-      "env": {
-        "ALIBABA_CLOUD_ACCESS_KEY_ID": "你的AccessKeyId",
-        "ALIBABA_CLOUD_ACCESS_KEY_SECRET": "你的AccessKeySecret",
-        "SLS_REGIONS": "cn-hangzhou"
-      }
-    }
-  }
-}
-```
+### 5. Start the MCP server
 
-开发命令：
+Run:
 
-```bash
-npm run dev    # 监听文件变化，自动重新编译
-npm run build  # 构建一次
-npm start      # 运行（用于验证启动是否正常）
-```
+npm run start
 
----
+If the project uses a different start command in your setup, use the command shown in the project files.
 
-## 支持的地域
+When it starts, the server waits for requests from your AI app.
 
-### 亚太
+## 🤖 Connect it to Cursor or Claude
 
-| 地域名称 | 地域 ID |
-|----------|---------|
-| 华北1（青岛） | `cn-qingdao` |
-| 华北2（北京） | `cn-beijing` |
-| 华北3（张家口） | `cn-zhangjiakou` |
-| 华北5（呼和浩特） | `cn-huhehaote` |
-| 华北6（乌兰察布） | `cn-wulanchabu` |
-| 华东1（杭州） | `cn-hangzhou` |
-| 华东2（上海） | `cn-shanghai` |
-| 华东5（南京-本地地域） | `cn-nanjing` |
-| 华东6（福州-本地地域） | `cn-fuzhou` |
-| 华南1（深圳） | `cn-shenzhen` |
-| 华南2（河源） | `cn-heyuan` |
-| 华南3（广州） | `cn-guangzhou` |
-| 西南1（成都） | `cn-chengdu` |
-| 中国香港 | `cn-hongkong` |
-| 日本（东京） | `ap-northeast-1` |
-| 韩国（首尔） | `ap-northeast-2` |
-| 新加坡 | `ap-southeast-1` |
-| 马来西亚（吉隆坡） | `ap-southeast-3` |
-| 印度尼西亚（雅加达） | `ap-southeast-5` |
-| 菲律宾（马尼拉） | `ap-southeast-6` |
-| 泰国（曼谷） | `ap-southeast-7` |
+### For Cursor
 
-### 欧洲与美洲
+1. Open Cursor.
+2. Go to the MCP or tool settings area.
+3. Add a new MCP server entry.
+4. Point it to the project folder and the start command.
+5. Save the settings.
+6. Restart Cursor if needed.
 
-| 地域名称 | 地域 ID |
-|----------|---------|
-| 美国（硅谷） | `us-west-1` |
-| 美国（弗吉尼亚） | `us-east-1` |
-| 美国（亚特兰大） | `us-southeast-1` |
-| 德国（法兰克福） | `eu-central-1` |
-| 英国（伦敦） | `eu-west-1` |
+### For Claude Desktop
 
-### 中东
+1. Open Claude Desktop.
+2. Go to the settings area for tools or MCP servers.
+3. Add a new server.
+4. Use the local project path and start command.
+5. Save and restart Claude Desktop.
 
-| 地域名称 | 地域 ID |
-|----------|---------|
-| 沙特（利雅得） | `me-central-1` |
-| 阿联酋（迪拜） | `me-east-1` |
+After setup, the AI app can send log search requests to the server.
 
-### 行业云
+## 🔍 How to use it
 
-| 地域名称 | 地域 ID |
-|----------|---------|
-| 华北2 金融云 | `cn-beijing-finance-1` |
-| 华东1 金融云 | `cn-hangzhou-finance` |
-| 华东2 金融云 | `cn-shanghai-finance-1` |
-| 华南1 金融云 | `cn-shenzhen-finance-1` |
-| 河源专属云（汽车合规） | `cn-heyuan-acdr-1` |
+Ask in plain language. You do not need to write queries by hand.
 
-> 完整接入点列表参见[阿里云 SLS 服务接入点文档](https://help.aliyun.com/zh/sls/developer-reference/service-entrance)。
+Examples:
 
----
+- Find error logs from my FC service today
+- Show logs with the text timeout in SAE
+- Search ECS logs for request ID 12345
+- Check ACK logs around 3 PM
+- Find failed login events in SLS
 
-## 技术栈
+The tool then helps the AI app turn your request into a log search.
 
-- **语言**：TypeScript
-- **运行时**：Node.js >= 18
-- **MCP SDK**：`@modelcontextprotocol/sdk`
-- **SLS SDK**：`@alicloud/sls20201230`
+## 🗂️ What it can help you do
 
-## License
+- search logs by words in the message
+- narrow results by time
+- look across cloud services that send logs to SLS
+- inspect errors for one app or one request
+- reduce time spent on manual log checks
 
-MIT
+## 📌 Good ways to ask for logs
+
+Use short, clear requests.
+
+Try:
+
+- show logs from last 10 minutes
+- find error logs with 500
+- search for order failed in ECS logs
+- get warning logs from my service today
+- show the trace for this request ID
+
+If you know the service name, include it. If you know the time, include that too.
+
+## 🧰 Troubleshooting
+
+### The server does not start
+
+Check these points:
+
+- Node.js is installed
+- you ran `npm install`
+- you opened the terminal in the right folder
+- the folder path has no strange characters
+
+### Cursor or Claude cannot find the server
+
+Check these points:
+
+- the MCP server entry points to the right folder
+- the start command is correct
+- you saved the settings
+- you restarted the app after changes
+
+### No logs appear
+
+Check these points:
+
+- the service sends logs to Alibaba Cloud SLS
+- the time range is correct
+- the service name is correct
+- your account can read the log store
+
+## 🔐 Common setup items
+
+You may need these in your local setup:
+
+- Alibaba Cloud access key info
+- SLS project name
+- SLS logstore name
+- region name
+- service filter names for FC, SAE, ECS, or ACK
+
+Keep these values ready before you connect the tool to your AI app.
+
+## 🧩 Typical use cases
+
+- A backend error appears in production, and you want the log line fast
+- A request fails, and you need the request ID trace
+- A service returns 500 errors, and you want the cause
+- You want to check logs from FC or SAE without opening the console
+- You want to use natural language instead of writing search syntax
+
+## 📎 Project link
+
+Open the project here:
+
+[https://github.com/tovadry954/aliyun-sls-mcp](https://github.com/tovadry954/aliyun-sls-mcp)
+
+## 🖥️ Windows setup at a glance
+
+1. Download the project files from the link above
+2. Extract the files if needed
+3. Install Node.js
+4. Open the project folder in Command Prompt
+5. Run `npm install`
+6. Run `npm run start`
+7. Add the server to Cursor or Claude
+8. Ask for logs in plain language
